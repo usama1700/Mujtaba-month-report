@@ -1,0 +1,1020 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Day-wise Load & PUE — Corporate Report</title>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
+<style>
+:root{--navy:#0f2e4d;--blue:#1f5f99;--blue2:#2f75b5;--bg:#f4f7fa;--card:#fff;--text:#18222d;--muted:#657383;--border:#d6dee7;--green:#15803d;--greenbg:#e8f5ec;--red:#b42318;--redbg:#fff0ed;--shadow:0 4px 16px rgba(15,46,77,.08)}
+*{box-sizing:border-box}
+body{margin:0;font-family:Segoe UI,Arial,sans-serif;background:var(--bg);color:var(--text)}
+header{background:linear-gradient(120deg,var(--navy),var(--blue));color:#fff;padding:18px 24px}
+header h1{margin:0;font-size:23px}
+header p{margin:6px 0 0;opacity:.92;font-size:14px}
+main{max-width:1500px;margin:18px auto;padding:0 16px 32px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow);padding:16px;margin-bottom:15px}
+button{border:0;border-radius:8px;padding:11px 18px;background:var(--blue2);color:#fff;font-weight:650;cursor:pointer;display:inline-flex;align-items:center;gap:8px;font-size:14px}
+button.success{background:linear-gradient(135deg,#15803d,#0f5c2b)}
+button.pdf{background:linear-gradient(135deg,#b42318,#7a1810)}
+button.danger{background:#b42318}
+button.secondary{background:#475569}
+button:disabled{opacity:.5;cursor:not-allowed}
+button.big{padding:14px 24px;font-size:15px;font-weight:700}
+input[type=file]{display:none}
+.dropzone{border:2px dashed #8eabc5;border-radius:12px;padding:26px;text-align:center;background:#f8fbfe}
+.dropzone strong{display:block;font-size:17px;margin-bottom:6px}
+.small{font-size:12px;color:var(--muted)}
+.status{padding:11px 13px;border-radius:8px;background:#eaf3fb;font-size:13px;line-height:1.5;margin-top:10px}
+.status.good{background:var(--greenbg);color:#11622f}
+.status.bad{background:var(--redbg);color:#8b1a12}
+.status.warn{background:#fff7d6;color:#7a4d00}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:15px}
+.kpi{border:1px solid var(--border);border-radius:10px;padding:12px;background:#fff}
+.kpi .k{font-size:11px;text-transform:uppercase;color:var(--muted);font-weight:700}
+.kpi .v{font-size:22px;color:var(--navy);font-weight:750;margin-top:5px}
+.kpi .s{font-size:11px;color:var(--muted);margin-top:3px}
+.table-wrap{overflow:auto;border:1px solid var(--border);border-radius:9px;max-height:600px;background:#fff}
+table{border-collapse:separate;border-spacing:0;width:100%;font-size:13px}
+th,td{padding:8px 10px;border-right:1px solid #e8edf2;border-bottom:1px solid #e8edf2;text-align:center;white-space:nowrap}
+thead th{position:sticky;top:0;z-index:4;background:var(--blue2);color:#fff;font-weight:700;font-size:12px}
+tbody tr:nth-child(even) td{background:#f8fbfe}
+tbody tr:hover td{background:#eaf3fb}
+td.left,th.left{text-align:left}
+.empty-hint{text-align:center;padding:44px 20px;color:var(--muted)}
+.empty-hint .big{font-size:46px;margin-bottom:10px;opacity:.4}
+.empty-hint .msg{font-size:14px;line-height:1.6}
+.toolbar{display:flex;gap:9px;flex-wrap:wrap;align-items:center}
+.card-head{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:12px}
+.card-head h3{margin:0}
+.download-hero{background:linear-gradient(135deg,#15803d,#0f5c2b);border-radius:12px;padding:20px;color:#fff;margin-bottom:15px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px}
+.download-hero .txt h3{margin:0 0 6px;font-size:20px}
+.download-hero .txt p{margin:0;opacity:.92;font-size:13px}
+.download-hero .btns{display:flex;gap:10px;flex-wrap:wrap}
+.download-hero button{background:#fff;color:#15803d;font-weight:800}
+.download-hero button.pdf-btn{background:#fff;color:#b42318}
+.download-hero button:hover{transform:translateY(-1px);box-shadow:0 4px 14px rgba(0,0,0,.2)}
+footer{color:var(--muted);font-size:12px;text-align:center;padding:12px}
+</style>
+</head>
+<body>
+<header>
+  <h1>Day-wise Load & PUE — Corporate Report</h1>
+  <p>Month ki sheet import karein — dashboard-style professional Excel.</p>
+</header>
+
+<main>
+  <section class="card no-print">
+    <div class="dropzone" id="dropzone">
+      <strong>Import Month Excel / CSV</strong>
+      <div class="small">Drag & drop .xlsx / .xls / .csv — poora month.</div>
+      <div class="toolbar" style="justify-content:center;margin-top:14px">
+        <label class="button" for="fileInput" style="background:var(--blue2);color:#fff;padding:11px 18px;border-radius:8px;cursor:pointer;font-weight:650">📂 Import Excel / CSV</label>
+        <input id="fileInput" type="file" accept=".xlsx,.xls,.csv">
+        <button class="secondary" id="sampleBtn">Load Sample</button>
+        <button class="danger" id="clearBtn">Clear</button>
+      </div>
+    </div>
+    <div class="status" id="importStatus">Ready. File import karein ya "Load Sample" dabayein.</div>
+  </section>
+
+  <section class="download-hero" id="downloadHero" style="display:none">
+    <div class="txt">
+      <h3>⬇️ Download Corporate Report</h3>
+      <p>Dashboard-style Excel — KPIs, data bars, color-coding, 3 sheets.</p>
+    </div>
+    <div class="btns">
+      <button class="big" id="heroExcelBtn">📊 Excel Download</button>
+      <button class="big pdf-btn" id="heroPdfBtn">📄 PDF Download</button>
+    </div>
+  </section>
+
+  <section class="kpis">
+    <div class="kpi"><div class="k">Total Days</div><div class="v" id="kDays">—</div><div class="s">Date se auto-group</div></div>
+    <div class="kpi"><div class="k">Avg Load</div><div class="v" id="kAvg">—</div><div class="s">Facility average</div></div>
+    <div class="kpi"><div class="k">Peak Load</div><div class="v" id="kPeak">—</div><div class="s" id="kPeakTime">—</div></div>
+    <div class="kpi"><div class="k">Avg PUE</div><div class="v" id="kPue">—</div><div class="s" id="kPueInfo">—</div></div>
+    <div class="kpi"><div class="k">Containers</div><div class="v" id="kSites">—</div><div class="s" id="kSitesInfo">—</div></div>
+  </section>
+
+  <section class="card no-print">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;align-items:end">
+      <div><label style="font-size:12px;font-weight:700;color:#34495e;display:block;margin-bottom:5px">Interval (hours)</label><input type="number" id="interval" min="0.001" step="0.01" value="1" style="width:100%;border:1px solid var(--border);border-radius:7px;padding:8px"></div>
+      <div><label style="font-size:12px;font-weight:700;color:#34495e;display:block;margin-bottom:5px">Energy Unit</label><select id="energyUnit" style="width:100%;border:1px solid var(--border);border-radius:7px;padding:8px"><option value="kwh">kWh → kW</option><option value="kw">Already kW</option></select></div>
+      <div><label style="font-size:12px;font-weight:700;color:#34495e;display:block;margin-bottom:5px">Decimals</label><select id="decimals" style="width:100%;border:1px solid var(--border);border-radius:7px;padding:8px"><option>2</option><option>1</option><option>3</option></select></div>
+      <div><label style="font-size:12px;font-weight:700;color:#34495e;display:block;margin-bottom:5px">Max Containers</label><input type="number" id="containerCount" min="1" max="20" value="5" style="width:100%;border:1px solid var(--border);border-radius:7px;padding:8px"></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="card-head">
+      <h3>📅 Day-wise Summary</h3>
+      <div class="toolbar no-print">
+        <button class="success" id="dayExcelBtn" disabled>📊 Excel</button>
+        <button class="pdf" id="dayPdfBtn" disabled>📄 PDF</button>
+      </div>
+    </div>
+    <div class="small" style="margin-bottom:10px">Har din ka Avg Load, Peak Load, Peak Time aur PUE.</div>
+    <div class="table-wrap" id="daySummaryWrap">
+      <div class="empty-hint"><div class="big">📅</div><div class="msg">Koi data nahi. File import karein.</div></div>
+    </div>
+  </section>
+</main>
+
+<footer>Calculations local browser mein hoti hain.</footer>
+
+<script>
+function buildSample(){
+  const rows=[];
+  rows.push(["Energy Efficiency Report","","","","","","",""]);
+  rows.push(["Period: Hour","","","Time Range: 2026-09-01 00:00:00 - 2026-09-30 23:59:59","","","",""]);
+  rows.push(["Operator: admin","","","Export Time: 2026-10-01 10:00:00","","","",""]);
+  rows.push([]);
+  rows.push(["","HCS 02","","","","HCS 01","",""]);
+  rows.push(["","Total Energy Consumption (kWh)","PUE (Ratio)","IT Energy (kWh)","Cooling Energy (kWh)","Total Energy Consumption (kWh)","PUE (Ratio)","IT Energy (kWh)"]);
+  const days=["2026-09-01","2026-09-02","2026-09-03","2026-09-04","2026-09-05"];
+  const base={"00":{a:22,b:18},"01":{a:21,b:17},"02":{a:20,b:17},"03":{a:19,b:16},"04":{a:19,b:16},"05":{a:20,b:17},"06":{a:22,b:18},"07":{a:24,b:20},"08":{a:26,b:22},"09":{a:28,b:23},"10":{a:30,b:25},"11":{a:31,b:26},"12":{a:30,b:25},"13":{a:29,b:24},"14":{a:30,b:25},"15":{a:31,b:26},"16":{a:30,b:25},"17":{a:28,b:23},"18":{a:26,b:22},"19":{a:25,b:20},"20":{a:24,b:20},"21":{a:23,b:19},"22":{a:23,b:19},"23":{a:22,b:18}};
+  days.forEach((day,di)=>{
+    for(let h=23;h>=0;h--){
+      const hh=String(h).padStart(2,"0");const b=base[hh];
+      const f=(x,s)=>(x+(di*0.7)+((h*s)%5)*0.2).toFixed(2);
+      const p1=(1.35+((h%5)*0.04)+di*0.01).toFixed(2);
+      const p2=(1.42+((h%4)*0.03)+di*0.01).toFixed(2);
+      rows.push([`${day} ${hh}:00:00`,f(b.a,1),p1,f(b.a*0.65,2),f(b.a*0.25,3),f(b.b,2),p2,f(b.b*0.65,4)]);
+    }
+  });
+  return rows;
+}
+
+let matrix=[],mapping=null,fileName="",sheetName="Report";
+const $=id=>document.getElementById(id);
+
+function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+function norm(s){return String(s??"").trim().toLowerCase().replace(/\s+/g," ");}
+function valNum(v){
+  if(v===null||v===undefined||v===""||v==="-")return null;
+  if(typeof v==="number"&&Number.isFinite(v))return v;
+  const s=String(v).replace(/,/g,"").trim();
+  if(!s||s==="-")return null;
+  const n=Number(s);return Number.isFinite(n)?n:null;
+}
+function parseDateLike(v){
+  if(v instanceof Date&&!isNaN(v))return v;
+  if(typeof v==="number"&&v>20000&&v<80000)return new Date(Math.round((v-25569)*86400*1000));
+  const s=String(v??"").trim(); if(!s)return null;
+  const d=new Date(s.replace(" ","T")); return isNaN(d)?null:d;
+}
+function dayKey(v){
+  const d=parseDateLike(v); if(!d)return null;
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+}
+function fmt(v,d){if(v===null||v===undefined||!Number.isFinite(v))return "—";return v.toFixed(d);}
+function avgNums(arr){const a=arr.filter(Number.isFinite);return a.length?a.reduce((x,y)=>x+y,0)/a.length:null;}
+function sumNums(arr){return arr.filter(Number.isFinite).reduce((x,y)=>x+y,0);}
+function maxPoint(arr){return arr.length?arr.reduce((a,b)=>b.v>a.v?b:a):null;}
+
+function cleanHeader(h){return String(h??"").toLowerCase().replace(/\(.*?\)/g," ").replace(/[^a-z0-9 ]/g," ").replace(/\s+/g," ").trim();}
+function headerMatchesPue(t){
+  const c=cleanHeader(t);if(!c)return false;
+  const tokens=c.split(" ").filter(Boolean);
+  return c==="pue"||c.startsWith("pue ")||c.endsWith(" pue")||tokens.includes("pue")||c==="power usage effectiveness"||c.includes("power usage effectiveness");
+}
+function columnLooksLikePue(col, dataRows){
+  if(!dataRows.length)return false;
+  let count=0,inR=0,nonInt=0;
+  for(const r of dataRows){
+    const v=valNum(matrix[r]?.[col]);if(v===null)continue;
+    count++;if(v>=1.0&&v<=3.5)inR++;if(!Number.isInteger(v))nonInt++;
+  }
+  if(count<3)return false;
+  return (inR/count)>=0.85 && (nonInt/count)>=0.5;
+}
+
+function detectMapping(){
+  if(!matrix.length)throw new Error("Workbook empty.");
+  let multi=-1;
+  for(let r=0;r<matrix.length;r++){
+    const hits=(matrix[r]||[]).filter(x=>norm(x).includes("total energy consumption")).length;
+    if(hits>=2){multi=r;break;}
+    if(hits===1&&multi<0)multi=r;
+  }
+  if(multi>=0){
+    const hits=(matrix[multi]||[]).filter(x=>norm(x).includes("total energy consumption")).length;
+    if(hits>=2)return detectMulti(multi);
+  }
+  for(let r=0;r<matrix.length;r++){
+    const a=String(matrix[r]?.[0]??"").trim();
+    if(/^total energy consumption/i.test(a)){
+      let ds=-1;
+      for(let rr=r+1;rr<matrix.length;rr++){if(parseDateLike(matrix[rr]?.[0])){ds=rr;break;}}
+      if(ds>=0)return detectSingle(r,ds);
+    }
+  }
+  if(multi>=0)return detectMulti(multi);
+  throw new Error("'Total Energy Consumption (kWh)' header nahi mila.");
+}
+
+function detectMulti(headerRow){
+  const black=/^energy consumption$|^data center$|^\/$|^period|^operator|^time range|^export time|^total electricity bill|^pue$|^dcie|^it energy|^cooling energy|^total energy|^others energy/i;
+  let siteRow=-1;
+  for(let r=headerRow-1;r>=Math.max(0,headerRow-15);r--){
+    const non=(matrix[r]||[]).slice(1).map((v,c)=>({v:String(v??"").trim(),c:c+1})).filter(x=>x.v&&!black.test(x.v));
+    if(non.length>=2){
+      const good=non.filter(x=>/^[A-Za-z0-9\s\-_.]{2,30}$/.test(x.v)&&!/consumption|energy|power|bill|pue|dcie/i.test(x.v));
+      if(good.length>=2){siteRow=r;break;}
+    }
+  }
+  if(siteRow<0)siteRow=Math.max(0,headerRow-2);
+  const starts=[];
+  for(let c=1;c<(matrix[siteRow]?.length||0);c++){
+    const s=String(matrix[siteRow]?.[c]??"").trim();
+    if(s&&!black.test(s))starts.push({name:s,start:c});
+  }
+  if(!starts.length)throw new Error("Multi layout mein koi container nahi mila.");
+  const lastCol=Math.max(...matrix.map(r=>r.length))-1;
+  const sites=starts.map((x,i)=>{
+    const end=i+1<starts.length?starts[i+1].start-1:lastCol;
+    const metrics={};
+    for(let c=x.start;c<=end;c++){
+      const m=String(matrix[headerRow]?.[c]??"").trim();
+      if(m)metrics[m]=c;
+    }
+    return {...x,end,metrics};
+  }).filter(s=>{for(const [n] of Object.entries(s.metrics))if(norm(n).includes("total energy consumption"))return true;return false;});
+  if(!sites.length)throw new Error("Container blocks mile par Total Energy column nahi.");
+  let dataEnd=headerRow;
+  for(let r=headerRow+1;r<matrix.length;r++){
+    const t=String(matrix[r]?.[0]??"").trim();
+    if(!t){if(dataEnd>headerRow)break;else continue;}
+    dataEnd=r;
+  }
+  const rows=[];
+  for(let r=headerRow+1;r<=dataEnd;r++)if(String(matrix[r]?.[0]??"").trim())rows.push(r);
+  return {headerRow,siteRow,sites,dataRows:rows,lastCol,layout:"multi"};
+}
+
+function detectSingle(headerRow,dataStart){
+  const firstRow=matrix[dataStart]||[];
+  let lastDataCol=1;
+  for(let c=1;c<firstRow.length;c++)if(valNum(firstRow[c])!==null)lastDataCol=c;
+
+  let pueCol=null;
+  for(let r=Math.max(0,headerRow-15);r<=headerRow;r++){
+    const row=matrix[r]||[];
+    for(let c=0;c<row.length;c++){if(headerMatchesPue(row[c])){pueCol=c;break;}}
+    if(pueCol!==null)break;
+  }
+  if(pueCol===null){
+    for(let c=1;c<=lastDataCol;c++){
+      const rowsForCheck=[];
+      for(let r=dataStart;r<matrix.length;r++){rowsForCheck.push(r);if(rowsForCheck.length>50)break;}
+      if(columnLooksLikePue(c, rowsForCheck)){pueCol=c;break;}
+    }
+  }
+
+  const userCount=Number($("containerCount")?.value)||5;
+  const MAX=(userCount>0&&userCount<=50)?userCount:5;
+  const headerNames={};
+  for(let r=Math.max(0,headerRow-5);r<=headerRow;r++){
+    const row=matrix[r]||[];
+    for(let c=1;c<row.length;c++){
+      const txt=String(row[c]??"").trim();
+      if(!txt)continue;
+      if(/total|pue|dcie|energy|bill|period|operator|range|export|consumption|cooling|it |others/i.test(txt))continue;
+      if(/^[A-Za-z0-9\s\-_.]{2,30}$/.test(txt)&&!headerNames[c])headerNames[c]=txt;
+    }
+  }
+  const fallback=["HCS 02","HCS 01","AI 01","AI 02","MARI COLO"];
+  const validCols=[];
+  for(let c=1;c<=lastDataCol;c++){
+    if(c===pueCol)continue;
+    let numCount=0,posCount=0;
+    for(let r=dataStart;r<matrix.length;r++){
+      const v=valNum(matrix[r]?.[c]);
+      if(v!==null){numCount++;if(v>0)posCount++;}
+      if(numCount>=10)break;
+    }
+    if(numCount<3)continue;
+    if(posCount/numCount<0.7)continue;
+    const rowsForCheck=[];
+    for(let r=dataStart;r<matrix.length;r++){rowsForCheck.push(r);if(rowsForCheck.length>50)break;}
+    if(columnLooksLikePue(c, rowsForCheck))continue;
+    if(validCols.length>=MAX)continue;
+    const name=headerNames[c]||fallback[validCols.length]||`Container ${validCols.length+1}`;
+    validCols.push({col:c,name});
+  }
+  const sites=validCols.map(vc=>({name:vc.name,start:vc.col,end:vc.col,metrics:{"Total Energy Consumption (kWh)":vc.col,"Energy":vc.col}}));
+  const rows=[];
+  for(let r=dataStart;r<matrix.length;r++){if(!String(matrix[r]?.[0]??"").trim())break;rows.push(r);}
+  if(!sites.length)throw new Error("Koi valid container column nahi mila.");
+  return {headerRow,siteRow:-1,sites,dataRows:rows,lastCol:lastDataCol,layout:"single",singlePueCol:pueCol};
+}
+
+function cellValue(r,c){return matrix[r]?.[c]??"";}
+
+function getPueCol(site){
+  if(mapping.layout==="single"&&mapping.singlePueCol!==null&&mapping.singlePueCol!==undefined){
+    return {col:mapping.singlePueCol,reason:"auto single"};
+  }
+  for(const [n,col] of Object.entries(site.metrics)){
+    if(headerMatchesPue(n))return {col,reason:"header match"};
+  }
+  for(const [n,col] of Object.entries(site.metrics)){
+    if(columnLooksLikePue(col,mapping.dataRows))return {col,reason:"values look PUE"};
+  }
+  return {col:null,reason:"not found"};
+}
+
+function getStats(){
+  if(!mapping)return null;
+  const interval=Math.max(.000001,Number($("interval").value)||1);
+  const unit=$("energyUnit").value;
+  const d=Number($("decimals").value||2);
+  const asLoad=e=>e===null?null:(unit==="kwh"?e/interval:e);
+
+  const perSite=mapping.sites.map(site=>{
+    const loadPts=[],allPues=[],perDay={};
+    const pueInfo=getPueCol(site);
+    const hasPue=pueInfo.col!==null;
+    for(const r of mapping.dataRows){
+      const dk=dayKey(cellValue(r,0))||"Unknown";
+      if(!perDay[dk])perDay[dk]={loads:[],pues:[]};
+      let e=null;
+      for(const [n,col] of Object.entries(site.metrics)){
+        if(norm(n).includes("total energy consumption")){e=valNum(matrix[r]?.[col]);break;}
+      }
+      const l=asLoad(e);
+      if(l!==null){loadPts.push({v:l,time:String(cellValue(r,0)),row:r});perDay[dk].loads.push(l);}
+      if(hasPue){
+        const q=valNum(matrix[r]?.[pueInfo.col]);
+        if(q!==null){allPues.push(q);perDay[dk].pues.push(q);}
+      }
+    }
+    const daySummary={};
+    for(const [dk,dd] of Object.entries(perDay)){
+      daySummary[dk]={avgLoad:avgNums(dd.loads),peak:dd.loads.length?Math.max(...dd.loads):null,pue:avgNums(dd.pues),readings:dd.loads.length};
+    }
+    return {site,perDay:daySummary,avgLoad:avgNums(loadPts.map(x=>x.v)),peak:maxPoint(loadPts),pue:avgNums(allPues),hasPue};
+  });
+
+  const facility=[];
+  for(const r of mapping.dataRows){
+    const vals=mapping.sites.map(s=>{
+      for(const [n,col] of Object.entries(s.metrics)){
+        if(norm(n).includes("total energy consumption"))return asLoad(valNum(matrix[r]?.[col]));
+      }
+      return null;
+    });
+    const valid=vals.filter(Number.isFinite);
+    const total=valid.length?sumNums(valid):null;
+    if(total!==null)facility.push({v:total,time:String(cellValue(r,0)),row:r,day:dayKey(cellValue(r,0))});
+  }
+  const facPerDay={};
+  for(const f of facility){const k=f.day||"Unknown";if(!facPerDay[k])facPerDay[k]=[];facPerDay[k].push(f);}
+  const facDaySummary={};
+  for(const [k,arr] of Object.entries(facPerDay)){
+    facDaySummary[k]={avgLoad:avgNums(arr.map(x=>x.v)),peak:maxPoint(arr)?.v??null,peakTime:maxPoint(arr)?.time??null,points:arr.length};
+  }
+  const pueSites=perSite.filter(s=>s.pue!==null);
+  const overallPue=pueSites.length?pueSites.reduce((a,b)=>a+b.pue,0)/pueSites.length:null;
+  const allDays=new Set();
+  perSite.forEach(s=>Object.keys(s.perDay).forEach(x=>allDays.add(x)));
+  Object.keys(facDaySummary).forEach(x=>allDays.add(x));
+  const dayList=[...allDays].sort();
+  return {perSite,facility,facDaySummary,dayList,overallAvg:avgNums(facility.map(x=>x.v)),overallPeak:maxPoint(facility),overallPue,pueContainerCount:pueSites.length,interval,unit,decimals:d};
+}
+
+function renderKPIs(st){
+  $("kDays").textContent=st.dayList.length||"—";
+  $("kAvg").textContent=st.overallAvg===null?"—":fmt(st.overallAvg,st.decimals)+" kW";
+  $("kPeak").textContent=st.overallPeak?fmt(st.overallPeak.v,st.decimals)+" kW":"—";
+  $("kPeakTime").textContent=st.overallPeak?st.overallPeak.time:"—";
+  $("kPue").textContent=st.overallPue===null?"—":fmt(st.overallPue,st.decimals);
+  $("kPueInfo").textContent=`${st.pueContainerCount}/${mapping.sites.length} containers`;
+  $("kSites").textContent=mapping.sites.length;
+  $("kSitesInfo").textContent=mapping.sites.map(s=>s.name).join(", ");
+}
+
+function renderDaySummary(st){
+  const wrap=$("daySummaryWrap");
+  if(!st.dayList.length){
+    wrap.innerHTML=`<div class="empty-hint"><div class="big">📅</div><div class="msg">Koi valid date row nahi mili.</div></div>`;
+    return;
+  }
+  const d=st.decimals;
+  let head=`<tr><th class="left" rowspan="2">Day</th>`;
+  st.perSite.forEach(s=>{head+=`<th colspan="3" style="background:#0f2e4d">${esc(s.site.name)}</th>`;});
+  head+=`<th colspan="3" style="background:#1f5f99">Facility</th></tr><tr>`;
+  st.perSite.forEach(()=>{head+=`<th>Avg (kW)</th><th>Peak (kW)</th><th>PUE</th>`;});
+  head+=`<th>Avg (kW)</th><th>Peak (kW)</th><th>Readings</th></tr>`;
+
+  let body="";
+  for(const day of st.dayList){
+    body+=`<tr><td class="left"><b>${esc(day)}</b></td>`;
+    st.perSite.forEach(s=>{
+      const dd=s.perDay[day]||{};
+      body+=`<td>${fmt(dd.avgLoad,d)}</td><td>${fmt(dd.peak,d)}</td><td>${dd.pue===null||dd.pue===undefined?"—":fmt(dd.pue,d)}</td>`;
+    });
+    const fd=st.facDaySummary[day]||{};
+    body+=`<td><b>${fmt(fd.avgLoad,d)}</b></td><td><b>${fmt(fd.peak,d)}</b></td><td>${fd.points||0}</td></tr>`;
+  }
+  body+=`<tr style="background:#eaf3fb;font-weight:700"><td class="left">ALL DAYS</td>`;
+  st.perSite.forEach(s=>{body+=`<td>${fmt(s.avgLoad,d)}</td><td>${fmt(s.peak?.v,d)}</td><td>${fmt(s.pue,d)}</td>`;});
+  body+=`<td>${fmt(st.overallAvg,d)}</td><td>${fmt(st.overallPeak?.v,d)}</td><td>${mapping.dataRows.length}</td></tr>`;
+  wrap.innerHTML=`<table><thead>${head}</thead><tbody>${body}</tbody></table>`;
+}
+
+function recalc(){
+  if(!mapping){
+    ["kDays","kAvg","kPeak","kPeakTime","kPue","kSites"].forEach(id=>$(id).textContent="—");
+    ["kPueInfo","kSitesInfo"].forEach(id=>$(id).textContent="—");
+    return;
+  }
+  const st=getStats();
+  renderKPIs(st);
+  renderDaySummary(st);
+}
+
+async function importFile(file){
+  try{
+    setStatus(`Reading <b>${esc(file.name)}</b>...`,"warn");
+    if(typeof XLSX==="undefined")throw new Error("Excel library load nahi hui.");
+    const buf=await file.arrayBuffer();
+    const wb=XLSX.read(buf,{type:"array",cellDates:true});
+    const sn=wb.SheetNames.includes("Report")?"Report":wb.SheetNames[0];
+    const ws=wb.Sheets[sn];
+    const arr=XLSX.utils.sheet_to_json(ws,{header:1,defval:"",raw:true});
+    applyData(arr,sn,file.name);
+  }catch(e){console.error(e);setStatus(`<b>Import failed:</b> ${esc(e.message)}`,"bad");}
+}
+
+function applyData(arr,sn,fn){
+  try{
+    matrix=arr.map(r=>r.slice());
+    sheetName=sn||"Report";fileName=fn||"Workbook";
+    mapping=detectMapping();
+    $("interval").value="1";
+    recalc();
+    $("dayExcelBtn").disabled=false;
+    $("dayPdfBtn").disabled=false;
+    $("downloadHero").style.display="flex";
+    const days=new Set();
+    mapping.dataRows.forEach(r=>{const d=dayKey(cellValue(r,0));if(d)days.add(d);});
+    const st=getStats();
+    setStatus(`✅ <b>${esc(fileName)}</b> imported. Containers: <b>${mapping.sites.length}</b>. Days: <b>${days.size}</b>. PUE: <b>${st.pueContainerCount}/${mapping.sites.length}</b>. Excel Download dabayein.`,"good");
+  }catch(e){console.error(e);mapping=null;setStatus(`<b>Import failed:</b> ${esc(e.message)}`,"bad");}
+}
+function setStatus(msg,type=""){const el=$("importStatus");el.className="status "+type;el.innerHTML=msg;}
+
+/* ============================================================
+   CORPORATE-GRADE EXCEL EXPORT (ExcelJS)
+   ============================================================ */
+async function downloadDaywiseExcel(){
+  if(!mapping){setStatus("Pehle file import karein.","bad");return;}
+  if(typeof ExcelJS==="undefined"){setStatus("ExcelJS library load nahi hui. Internet check karein.","bad");return;}
+  setStatus("Corporate Excel generate ho raha hai...","warn");
+  try{
+    const st=getStats();
+    const d=st.decimals;
+    const wb=new ExcelJS.Workbook();
+    wb.creator="Energy Analytics";
+    wb.created=new Date();
+    wb.properties={title:"Day-wise Load & PUE Report",subject:"Energy Efficiency Analysis",company:"Energy Analytics"};
+
+    // ============================================================
+    // SHEET 1: DASHBOARD
+    // ============================================================
+    const dash=wb.addWorksheet("Dashboard",{properties:{tabColor:{argb:"FF0F2E4D"}}});
+    dash.views=[{showGridLines:false}];
+    dash.pageSetup={orientation:"landscape",fitToPage:true,fitToWidth:1,fitToHeight:0};
+
+    // Big title banner (rows 1-3)
+    dash.mergeCells(1,1,3,8);
+    const bTitle=dash.getCell(1,1);
+    bTitle.value="ENERGY EFFICIENCY REPORT";
+    bTitle.fill={type:"gradient",gradient:"angle",degree:0,stops:[{position:0,color:{argb:"FF0F2E4D"}},{position:1,color:{argb:"FF2F75B5"}}]};
+    bTitle.font={bold:true,size:26,color:{argb:"FFFFFFFF"},name:"Calibri"};
+    bTitle.alignment={horizontal:"center",vertical:"middle"};
+    dash.getRow(1).height=18;
+    dash.getRow(2).height=18;
+    dash.getRow(3).height=18;
+
+    // Subtitle
+    dash.mergeCells(4,1,4,8);
+    const subTitle=dash.getCell(4,1);
+    subTitle.value="Day-wise Load & PUE Analysis  •  Monthly Report";
+    subTitle.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FFEAF3FB"}};
+    subTitle.font={italic:true,size:13,color:{argb:"FF365A78"}};
+    subTitle.alignment={horizontal:"center",vertical:"middle"};
+    dash.getRow(4).height=24;
+
+    // Metadata row
+    dash.mergeCells(6,1,6,8);
+    const metaCell=dash.getCell(6,1);
+    metaCell.value=`Source: ${fileName}   •   Sheet: ${sheetName}   •   Interval: ${st.interval} h   •   Generated: ${new Date().toLocaleString()}`;
+    metaCell.font={size:10,color:{argb:"FF657383"}};
+    metaCell.alignment={horizontal:"center",vertical:"middle"};
+    dash.getRow(6).height=20;
+
+    // ===== KPI CARDS (row 8-11) =====
+    const kpiStartRow=8;
+    const kpis=[
+      {label:"TOTAL DAYS",value:String(st.dayList.length),color:"FF2F75B5",sub:"Days detected"},
+      {label:"AVG FACILITY LOAD",value:st.overallAvg!==null?fmt(st.overallAvg,d)+" kW":"—",color:"FF15803D",sub:"Average across all days"},
+      {label:"PEAK FACILITY LOAD",value:st.overallPeak?fmt(st.overallPeak.v,d)+" kW":"—",color:"FFB42318",sub:st.overallPeak?st.overallPeak.time:"—"},
+      {label:"AVG PUE",value:st.overallPue!==null?fmt(st.overallPue,d):"—",color:"FFA16207",sub:`${st.pueContainerCount}/${mapping.sites.length} containers`}
+    ];
+
+    kpis.forEach((kpi,i)=>{
+      const col=i*2+1;
+      // KPI box
+      dash.mergeCells(kpiStartRow,col,kpiStartRow+3,col+1);
+      const cell=dash.getCell(kpiStartRow,col);
+      cell.value=`${kpi.label}\n${kpi.value}\n${kpi.sub}`;
+      cell.fill={type:"gradient",gradient:"angle",degree:90,stops:[{position:0,color:{argb:kpi.color}},{position:1,color:{argb:"FF0F2E4D"}}]};
+      cell.font={bold:true,size:13,color:{argb:"FFFFFFFF"}};
+      cell.alignment={horizontal:"center",vertical:"middle",wrapText:true};
+      cell.border={
+        top:{style:"medium",color:{argb:"FFFFFFFF"}},
+        left:{style:"medium",color:{argb:"FFFFFFFF"}},
+        bottom:{style:"medium",color:{argb:"FFFFFFFF"}},
+        right:{style:"medium",color:{argb:"FFFFFFFF"}}
+      };
+    });
+    dash.getRow(kpiStartRow).height=20;
+    dash.getRow(kpiStartRow+1).height=20;
+    dash.getRow(kpiStartRow+2).height=20;
+    dash.getRow(kpiStartRow+3).height=20;
+
+    // Container summary table
+    let cr=14;
+    dash.mergeCells(cr,1,cr,8);
+    const secTitle=dash.getCell(cr,1);
+    secTitle.value="CONTAINER PERFORMANCE SUMMARY";
+    secTitle.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FF0F2E4D"}};
+    secTitle.font={bold:true,size:14,color:{argb:"FFFFFFFF"}};
+    secTitle.alignment={horizontal:"center",vertical:"middle"};
+    dash.getRow(cr).height=26;
+
+    cr++;
+    const cHeaders=["Container","Avg Load (kW)","Peak Load (kW)","Peak Time","Avg PUE","Health",""];
+    dash.getRow(cr).values=cHeaders.slice(0,6);
+    for(let c=1;c<=7;c++){
+      const cell=dash.getCell(cr,c);
+      cell.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FF2F75B5"}};
+      cell.font={bold:true,size:11,color:{argb:"FFFFFFFF"}};
+      cell.alignment={horizontal:"center",vertical:"middle"};
+      cell.border=borderWhite();
+    }
+    dash.getRow(cr).height=24;
+
+    // Container rows
+    st.perSite.forEach((s,idx)=>{
+      cr++;
+      const pueGood=s.pue!==null&&s.pue<=1.5;
+      const health=pueGood?"✓ Good":(s.pue!==null&&s.pue<=2.0?"⚠ Average":"✗ Poor");
+      const rowData=[
+        s.site.name,
+        s.avgLoad!=null?Number(s.avgLoad.toFixed(d)):null,
+        s.peak?.v!=null?Number(s.peak.v.toFixed(d)):null,
+        s.peak?.time||"—",
+        s.pue!=null?Number(s.pue.toFixed(d)):null,
+        health
+      ];
+      rowData.forEach((val,i)=>{
+        const cell=dash.getCell(cr,i+1);
+        cell.value=val;
+        cell.font={size:11};
+        cell.alignment={horizontal:i===0?"left":"center",vertical:"middle"};
+        cell.border=borderThin();
+        if(idx%2===1)cell.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FFF7FAFC"}};
+        if(i===0)cell.font={size:11,bold:true,color:{argb:"FF0F2E4D"}};
+        if(i===1||i===2)cell.numFmt=`0.${"0".repeat(d)}`;
+        if(i===4){cell.numFmt=`0.${"0".repeat(d)}`;cell.font={bold:true,size:11,color:{argb:pueGood?"FF15803D":"FFB42318"}};}
+        if(i===5){cell.font={bold:true,size:11,color:{argb:pueGood?"FF15803D":"FFB42318"}};}
+      });
+      dash.getRow(cr).height=22;
+    });
+
+    // Column widths
+    dash.getColumn(1).width=18;
+    dash.getColumn(2).width=16;
+    dash.getColumn(3).width=16;
+    dash.getColumn(4).width=22;
+    dash.getColumn(5).width=12;
+    dash.getColumn(6).width=14;
+    dash.getColumn(7).width=6;
+    dash.getColumn(8).width=6;
+
+    // ============================================================
+    // SHEET 2: DAY-WISE SUMMARY (main data)
+    // ============================================================
+    const ws=wb.addWorksheet("Day-wise Summary",{properties:{tabColor:{argb:"FF15803D"}}});
+    ws.views=[{state:"frozen",ySplit:7,xSplit:1,showGridLines:false}];
+    ws.pageSetup={orientation:"landscape",fitToPage:true,fitToWidth:1,fitToHeight:0,margins:{left:.4,right:.4,top:.6,bottom:.6,header:.3,footer:.3}};
+    ws.headerFooter={
+      oddHeader:"&C&\"Calibri,Bold\"&12Day-wise Load & PUE Report",
+      oddFooter:"&L&\"Calibri,Italic\"&9Energy Analytics&R&\"Calibri,Italic\"&9Page &P of &N"
+    };
+
+    const totalCols=1+st.perSite.length*3+3;
+
+    // Title banner
+    ws.mergeCells(1,1,2,totalCols);
+    const mainTitle=ws.getCell(1,1);
+    mainTitle.value="DAY-WISE LOAD & PUE REPORT";
+    mainTitle.fill={type:"gradient",gradient:"angle",degree:0,stops:[{position:0,color:{argb:"FF0F2E4D"}},{position:1,color:{argb:"FF2F75B5"}}]};
+    mainTitle.font={bold:true,color:{argb:"FFFFFFFF"},size:18,name:"Calibri"};
+    mainTitle.alignment={horizontal:"center",vertical:"middle"};
+    ws.getRow(1).height=20;
+    ws.getRow(2).height=20;
+
+    // Subtitle
+    ws.mergeCells(3,1,3,totalCols);
+    const sub2=ws.getCell(3,1);
+    sub2.value=`File: ${fileName}  |  Interval: ${st.interval} h  |  Energy Unit: ${st.unit==="kwh"?"kWh → kW":"kW"}  |  Generated: ${new Date().toLocaleString()}`;
+    sub2.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FFEAF3FB"}};
+    sub2.font={italic:true,color:{argb:"FF365A78"},size:10};
+    sub2.alignment={horizontal:"center",vertical:"middle"};
+    ws.getRow(3).height=22;
+
+    // Spacer
+    ws.getRow(4).height=6;
+
+    // Two-level headers
+    const h1=5,h2=6;
+    ws.mergeCells(h1,1,h2,1);
+    const dayHdr=ws.getCell(h1,1);
+    dayHdr.value="Day";
+    dayHdr.fill={type:"gradient",gradient:"angle",degree:0,stops:[{position:0,color:{argb:"FF0F2E4D"}},{position:1,color:{argb:"FF1F5F99"}}]};
+    dayHdr.font={bold:true,color:{argb:"FFFFFFFF"},size:11};
+    dayHdr.alignment={horizontal:"center",vertical:"middle"};
+    dayHdr.border=borderNavy();
+
+    let col=2;
+    st.perSite.forEach(s=>{
+      ws.mergeCells(h1,col,h1,col+2);
+      const sc=ws.getCell(h1,col);
+      sc.value=s.site.name;
+      sc.fill={type:"gradient",gradient:"angle",degree:0,stops:[{position:0,color:{argb:"FF0F2E4D"}},{position:1,color:{argb:"FF1F5F99"}}]};
+      sc.font={bold:true,color:{argb:"FFFFFFFF"},size:11};
+      sc.alignment={horizontal:"center",vertical:"middle"};
+      sc.border=borderNavy();
+
+      ["Avg Load (kW)","Peak Load (kW)","PUE"].forEach((txt,idx)=>{
+        const c=ws.getCell(h2,col+idx);
+        c.value=txt;
+        c.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FF2F75B5"}};
+        c.font={bold:true,color:{argb:"FFFFFFFF"},size:10};
+        c.alignment={horizontal:"center",vertical:"middle",wrapText:true};
+        c.border=borderWhite();
+      });
+      col+=3;
+    });
+
+    // Facility header
+    ws.mergeCells(h1,col,h1,col+2);
+    const fc=ws.getCell(h1,col);
+    fc.value="FACILITY TOTAL";
+    fc.fill={type:"gradient",gradient:"angle",degree:0,stops:[{position:0,color:{argb:"FF1F5F99"}},{position:1,color:{argb:"FF3D8BD9"}}]};
+    fc.font={bold:true,color:{argb:"FFFFFFFF"},size:11};
+    fc.alignment={horizontal:"center",vertical:"middle"};
+    fc.border=borderNavy();
+
+    ["Avg Load (kW)","Peak Load (kW)","Readings"].forEach((txt,idx)=>{
+      const c=ws.getCell(h2,col+idx);
+      c.value=txt;
+      c.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FF3D8BD9"}};
+      c.font={bold:true,color:{argb:"FFFFFFFF"},size:10};
+      c.alignment={horizontal:"center",vertical:"middle",wrapText:true};
+      c.border=borderWhite();
+    });
+
+    ws.getRow(h1).height=26;
+    ws.getRow(h2).height=30;
+
+    // ===== DATA ROWS =====
+    const dataStartRow=7;
+    let rr=dataStartRow;
+    for(const day of st.dayList){
+      const dayCell=ws.getCell(rr,1);
+      dayCell.value=day;
+      dayCell.alignment={horizontal:"left",vertical:"middle"};
+      dayCell.font={bold:true,size:11,color:{argb:"FF18222D"}};
+
+      let c=2;
+      st.perSite.forEach(s=>{
+        const dd=s.perDay[day]||{};
+        const v1=ws.getCell(rr,c++);
+        v1.value=dd.avgLoad!=null?Number(dd.avgLoad.toFixed(d)):null;
+        v1.numFmt=`0.${"0".repeat(d)}`;
+        v1.alignment={horizontal:"center",vertical:"middle"};
+
+        const v2=ws.getCell(rr,c++);
+        v2.value=dd.peak!=null?Number(dd.peak.toFixed(d)):null;
+        v2.numFmt=`0.${"0".repeat(d)}`;
+        v2.alignment={horizontal:"center",vertical:"middle"};
+
+        const v3=ws.getCell(rr,c++);
+        v3.value=dd.pue!=null?Number(dd.pue.toFixed(d)):null;
+        v3.numFmt=`0.${"0".repeat(d)}`;
+        v3.alignment={horizontal:"center",vertical:"middle"};
+        v3.font={bold:true,color:{argb:"FF1F5F99"}};
+      });
+      const fd=st.facDaySummary[day]||{};
+      const f1=ws.getCell(rr,c++);
+      f1.value=fd.avgLoad!=null?Number(fd.avgLoad.toFixed(d)):null;
+      f1.numFmt=`0.${"0".repeat(d)}`;
+      f1.alignment={horizontal:"center",vertical:"middle"};
+      f1.font={bold:true,color:{argb:"FF0F2E4D"}};
+
+      const f2=ws.getCell(rr,c++);
+      f2.value=fd.peak!=null?Number(fd.peak.toFixed(d)):null;
+      f2.numFmt=`0.${"0".repeat(d)}`;
+      f2.alignment={horizontal:"center",vertical:"middle"};
+      f2.font={bold:true,color:{argb:"FF0F2E4D"}};
+
+      const f3=ws.getCell(rr,c++);
+      f3.value=fd.points||0;
+      f3.alignment={horizontal:"center",vertical:"middle"};
+
+      for(let cc=1;cc<=totalCols;cc++){
+        const cell=ws.getCell(rr,cc);
+        if((rr-dataStartRow)%2===1)cell.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FFF7FAFC"}};
+        cell.border=borderThin();
+        if(!cell.font||!cell.font.bold)cell.font=Object.assign({},cell.font,{size:11});
+      }
+      ws.getRow(rr).height=22;
+      rr++;
+    }
+
+    // ===== TOTAL ROW =====
+    const totalRow=rr;
+    let c=1;
+    const tl=ws.getCell(totalRow,c++);
+    tl.value="ALL DAYS";
+    tl.font={bold:true,size:12,color:{argb:"FFFFFFFF"}};
+    tl.alignment={horizontal:"left",vertical:"middle"};
+
+    st.perSite.forEach(s=>{
+      const v1=ws.getCell(totalRow,c++);
+      v1.value=s.avgLoad!=null?Number(s.avgLoad.toFixed(d)):null;
+      v1.numFmt=`0.${"0".repeat(d)}`;
+      v1.font={bold:true,color:{argb:"FFFFFFFF"}};
+      v1.alignment={horizontal:"center",vertical:"middle"};
+
+      const v2=ws.getCell(totalRow,c++);
+      v2.value=s.peak?.v!=null?Number(s.peak.v.toFixed(d)):null;
+      v2.numFmt=`0.${"0".repeat(d)}`;
+      v2.font={bold:true,color:{argb:"FFFFFFFF"}};
+      v2.alignment={horizontal:"center",vertical:"middle"};
+
+      const v3=ws.getCell(totalRow,c++);
+      v3.value=s.pue!=null?Number(s.pue.toFixed(d)):null;
+      v3.numFmt=`0.${"0".repeat(d)}`;
+      v3.font={bold:true,color:{argb:"FFFFFFFF"}};
+      v3.alignment={horizontal:"center",vertical:"middle"};
+    });
+    const tf1=ws.getCell(totalRow,c++);
+    tf1.value=st.overallAvg!=null?Number(st.overallAvg.toFixed(d)):null;
+    tf1.numFmt=`0.${"0".repeat(d)}`;
+    tf1.font={bold:true,color:{argb:"FFFFFFFF"}};
+    tf1.alignment={horizontal:"center",vertical:"middle"};
+
+    const tf2=ws.getCell(totalRow,c++);
+    tf2.value=st.overallPeak?.v!=null?Number(st.overallPeak.v.toFixed(d)):null;
+    tf2.numFmt=`0.${"0".repeat(d)}`;
+    tf2.font={bold:true,color:{argb:"FFFFFFFF"}};
+    tf2.alignment={horizontal:"center",vertical:"middle"};
+
+    const tf3=ws.getCell(totalRow,c++);
+    tf3.value=mapping.dataRows.length;
+    tf3.font={bold:true,color:{argb:"FFFFFFFF"}};
+    tf3.alignment={horizontal:"center",vertical:"middle"};
+
+    for(let cc=1;cc<=totalCols;cc++){
+      const cell=ws.getCell(totalRow,cc);
+      cell.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FF0F2E4D"}};
+      cell.border={
+        top:{style:"medium",color:{argb:"FF0F2E4D"}},
+        left:{style:"thin",color:{argb:"FF475569"}},
+        right:{style:"thin",color:{argb:"FF475569"}},
+        bottom:{style:"medium",color:{argb:"FF0F2E4D"}}
+      };
+    }
+    ws.getRow(totalRow).height=28;
+
+    // Footer
+    const footerRow=totalRow+2;
+    ws.mergeCells(footerRow,1,footerRow,totalCols);
+    const fCell=ws.getCell(footerRow,1);
+    fCell.value=`PUE Containers: ${st.pueContainerCount}/${mapping.sites.length}   •   Formula: Load (kW) = Energy (kWh) ÷ Interval (h)   •   ${new Date().toLocaleString()}`;
+    fCell.font={italic:true,size:9,color:{argb:"FF657383"}};
+    fCell.alignment={horizontal:"center",vertical:"middle"};
+    fCell.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FFF1F6FA"}};
+    ws.getRow(footerRow).height=20;
+
+    // Column widths
+    ws.getColumn(1).width=14;
+    for(let cc=2;cc<=totalCols;cc++)ws.getColumn(cc).width=13;
+
+    // Auto filter
+    ws.autoFilter={from:{row:h2,column:1},to:{row:totalRow-1,column:totalCols}};
+
+    // Print settings
+    ws.printArea=`A1:${colLetter(totalCols)}${footerRow}`;
+    ws.pageSetup.printTitlesRow=`${h1}:${h2}`;
+    ws.pageSetup.horizontalCentered=true;
+
+    // Conditional formatting — PUE data bars
+    const pueCols=[];
+    let pueColIdx=1;
+    for(let i=0;i<st.perSite.length;i++){
+      pueColIdx+=3;
+      pueCols.push(pueColIdx);
+    }
+    pueCols.forEach(pc=>{
+      ws.addConditionalFormatting({
+        ref:`${colLetter(pc)}${dataStartRow}:${colLetter(pc)}${totalRow-1}`,
+        rules:[
+          {
+            type:"colorScale",
+            priority:1,
+            cfvo:[{type:"num",value:1.0},{type:"num",value:1.5},{type:"num",value:2.0},{type:"num",value:3.0}],
+            color:[{argb:"FF15803D"},{argb:"FF86EFAC"},{argb:"FFFBBF24"},{argb:"FFB42318"}]
+          }
+        ]
+      });
+    });
+
+    // ============================================================
+    // SHEET 3: INFO
+    // ============================================================
+    const info=wb.addWorksheet("Report Info",{properties:{tabColor:{argb:"FF657383"}}});
+    info.views=[{showGridLines:false}];
+    info.pageSetup={orientation:"portrait",fitToPage:true,fitToWidth:1};
+    info.columns=[{width:24},{width:58}];
+
+    info.mergeCells(1,1,2,2);
+    const iTitle=info.getCell(1,1);
+    iTitle.value="REPORT INFORMATION";
+    iTitle.fill={type:"gradient",gradient:"angle",degree:0,stops:[{position:0,color:{argb:"FF0F2E4D"}},{position:1,color:{argb:"FF2F75B5"}}]};
+    iTitle.font={bold:true,color:{argb:"FFFFFFFF"},size:16};
+    iTitle.alignment={horizontal:"center",vertical:"middle"};
+    info.getRow(1).height=22;
+    info.getRow(2).height=22;
+
+    const infoPairs=[
+      ["Source File",fileName],
+      ["Sheet Name",sheetName],
+      ["Report Type","Day-wise Load & PUE Analysis"],
+      ["Reading Interval",`${st.interval} hour(s)`],
+      ["Energy Unit",st.unit==="kwh"?"kWh (converted to kW)":"Already kW"],
+      ["Total Containers",String(mapping.sites.length)],
+      ["Container Names",mapping.sites.map(s=>s.name).join(", ")],
+      ["Total Days",String(st.dayList.length)],
+      ["Total Readings",String(mapping.dataRows.length)],
+      ["PUE Containers",`${st.pueContainerCount}/${mapping.sites.length}`],
+      ["Layout Type",mapping.layout==="single"?"Single-column":"Multi-container"],
+      ["Formula","Load (kW) = Energy (kWh) ÷ Interval (h)"],
+      ["Generated",new Date().toLocaleString()],
+      ["Generated By","Energy Analytics Tool"]
+    ];
+
+    let ir=4;
+    infoPairs.forEach((p,i)=>{
+      const kc=info.getCell(ir,1);
+      kc.value=p[0];
+      kc.font={bold:true,color:{argb:"FF365A78"},size:11};
+      kc.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FFEAF3FB"}};
+      kc.border=borderThin();
+      kc.alignment={vertical:"middle",horizontal:"left"};
+
+      const vc=info.getCell(ir,2);
+      vc.value=p[1];
+      vc.font={size:11};
+      vc.border=borderThin();
+      vc.alignment={vertical:"middle",horizontal:"left",wrapText:true};
+
+      if(i%2===1){
+        kc.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FFF1F6FA"}};
+        vc.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FFF7FAFC"}};
+      }
+      info.getRow(ir).height=22;
+      ir++;
+    });
+
+    // ============================================================
+    // DOWNLOAD
+    // ============================================================
+    const buf=await wb.xlsx.writeBuffer();
+    const fname=(fileName||"Report").replace(/\.(xlsx|xls|csv)$/i,"").replace(/[\\/:*?"<>|]/g,"_")+"_Corporate_Report.xlsx";
+    const blob=new Blob([buf],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
+    const a=document.createElement("a");
+    a.href=URL.createObjectURL(blob);
+    a.download=fname;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(()=>URL.revokeObjectURL(a.href),1500);
+    setStatus(`✅ Corporate Excel download ho gaya: <b>${esc(fname)}</b> — 3 sheets: Dashboard, Day-wise Summary, Report Info`,"good");
+  }catch(e){
+    console.error(e);
+    setStatus(`<b>Excel download failed:</b> ${esc(e.message)}`,"bad");
+  }
+}
+
+function colLetter(n){let s="";n++;while(n){const r=(n-1)%26;s=String.fromCharCode(65+r)+s;n=Math.floor((n-1)/26);}return s;}
+function borderThin(){return{top:{style:"thin",color:{argb:"FFE0E6EC"}},left:{style:"thin",color:{argb:"FFE0E6EC"}},bottom:{style:"thin",color:{argb:"FFE0E6EC"}},right:{style:"thin",color:{argb:"FFE0E6EC"}}};}
+function borderWhite(){return{top:{style:"thin",color:{argb:"FFFFFFFF"}},left:{style:"thin",color:{argb:"FFFFFFFF"}},bottom:{style:"thin",color:{argb:"FFFFFFFF"}},right:{style:"thin",color:{argb:"FFFFFFFF"}}};}
+function borderNavy(){return{top:{style:"medium",color:{argb:"FF0F2E4D"}},left:{style:"medium",color:{argb:"FF0F2E4D"}},bottom:{style:"medium",color:{argb:"FF0F2E4D"}},right:{style:"medium",color:{argb:"FF0F2E4D"}}};}
+
+/* ===== PDF DOWNLOAD ===== */
+function downloadDaywisePDF(){
+  if(!mapping){setStatus("Pehle file import karein.","bad");return;}
+  try{
+    const st=getStats();
+    const d=st.decimals;
+    const printWin=window.open("","_blank");
+    if(!printWin){setStatus("<b>Popup blocked!</b> Please allow popups.","bad");return;}
+
+    let html=`<!doctype html><html><head><meta charset="utf-8"><title>Day-wise Report</title>
+    <style>
+      body{font-family:Segoe UI,Arial,sans-serif;margin:20px;color:#18222d}
+      h1{color:#0f2e4d;font-size:22px;margin:0 0 6px}
+      .sub{color:#657383;font-size:12px;margin-bottom:20px}
+      .kpis{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap}
+      .kpi{border:1px solid #d6dee7;border-radius:8px;padding:10px 14px;background:#eaf3fb;min-width:150px}
+      .kpi .k{font-size:10px;text-transform:uppercase;color:#657383;font-weight:700}
+      .kpi .v{font-size:18px;color:#0f2e4d;font-weight:750;margin-top:3px}
+      table{border-collapse:collapse;width:100%;font-size:10px}
+      th,td{border:1px solid #d6dee7;padding:5px 6px;text-align:center;white-space:nowrap}
+      th{background:#2f75b5;color:#fff;font-weight:700}
+      tbody tr:nth-child(even) td{background:#f8fbfe}
+      td:first-child,th:first-child{text-align:left}
+      .total-row{background:#eaf3fb!important;font-weight:700}
+      @media print{body{margin:10px} @page{size:landscape;margin:10mm}}
+    </style></head><body>`;
+    html+=`<h1>Day-wise Load &amp; PUE Report</h1>`;
+    html+=`<div class="sub">File: ${esc(fileName)} | Containers: ${mapping.sites.length} | Days: ${st.dayList.length} | Interval: ${st.interval} h | ${new Date().toLocaleString()}</div>`;
+    html+=`<div class="kpis">
+      <div class="kpi"><div class="k">Total Days</div><div class="v">${st.dayList.length}</div></div>
+      <div class="kpi"><div class="k">Avg Load</div><div class="v">${st.overallAvg!==null?fmt(st.overallAvg,d)+" kW":"—"}</div></div>
+      <div class="kpi"><div class="k">Peak Load</div><div class="v">${st.overallPeak?fmt(st.overallPeak.v,d)+" kW":"—"}</div></div>
+      <div class="kpi"><div class="k">Avg PUE</div><div class="v">${st.overallPue!==null?fmt(st.overallPue,d):"—"}</div></div>
+    </div>`;
+    html+=`<table><thead><tr><th rowspan="2">Day</th>`;
+    st.perSite.forEach(s=>{html+=`<th colspan="3" style="background:#0f2e4d">${esc(s.site.name)}</th>`;});
+    html+=`<th colspan="3" style="background:#1f5f99">Facility</th></tr><tr>`;
+    st.perSite.forEach(()=>{html+=`<th>Avg (kW)</th><th>Peak (kW)</th><th>PUE</th>`;});
+    html+=`<th>Avg (kW)</th><th>Peak (kW)</th><th>Readings</th></tr></thead><tbody>`;
+    for(const day of st.dayList){
+      html+=`<tr><td><b>${esc(day)}</b></td>`;
+      st.perSite.forEach(s=>{
+        const dd=s.perDay[day]||{};
+        html+=`<td>${fmt(dd.avgLoad,d)}</td><td>${fmt(dd.peak,d)}</td><td>${dd.pue==null?"—":fmt(dd.pue,d)}</td>`;
+      });
+      const fd=st.facDaySummary[day]||{};
+      html+=`<td><b>${fmt(fd.avgLoad,d)}</b></td><td><b>${fmt(fd.peak,d)}</b></td><td>${fd.points||0}</td></tr>`;
+    }
+    html+=`<tr class="total-row"><td>ALL DAYS</td>`;
+    st.perSite.forEach(s=>{html+=`<td>${fmt(s.avgLoad,d)}</td><td>${fmt(s.peak?.v,d)}</td><td>${fmt(s.pue,d)}</td>`;});
+    html+=`<td>${fmt(st.overallAvg,d)}</td><td>${fmt(st.overallPeak?.v,d)}</td><td>${mapping.dataRows.length}</td></tr>`;
+    html+=`</tbody></table></body></html>`;
+    printWin.document.open();
+    printWin.document.write(html);
+    printWin.document.close();
+    printWin.onload=function(){setTimeout(()=>{printWin.print();},400);};
+    setStatus("✅ PDF print dialog khul raha hai. <b>Save as PDF</b> select karein.","good");
+  }catch(e){console.error(e);setStatus(`<b>PDF failed:</b> ${esc(e.message)}`,"bad");}
+}
+
+function clearAll(){
+  matrix=[];mapping=null;fileName="";sheetName="Report";
+  $("dayExcelBtn").disabled=true;$("dayPdfBtn").disabled=true;
+  $("downloadHero").style.display="none";
+  $("daySummaryWrap").innerHTML=`<div class="empty-hint"><div class="big">📅</div><div class="msg">Koi data nahi. File import karein.</div></div>`;
+  recalc();
+  setStatus("Ready. File import karein ya \"Load Sample\" dabayein.");
+}
+
+$("fileInput").addEventListener("change",e=>{if(e.target.files[0])importFile(e.target.files[0]);e.target.value="";});
+$("sampleBtn").addEventListener("click",()=>applyData(buildSample(),"Report","Sample_Month.xlsx"));
+$("clearBtn").addEventListener("click",clearAll);
+$("dayExcelBtn").addEventListener("click",downloadDaywiseExcel);
+$("dayPdfBtn").addEventListener("click",downloadDaywisePDF);
+$("heroExcelBtn").addEventListener("click",downloadDaywiseExcel);
+$("heroPdfBtn").addEventListener("click",downloadDaywisePDF);
+["interval","energyUnit","decimals"].forEach(id=>$(id).addEventListener("change",recalc));
+$("containerCount").addEventListener("change",()=>{if(mapping){try{mapping=detectMapping();recalc();setStatus(`Containers: ${mapping.sites.map(s=>esc(s.name)).join(", ")}`,"good");}catch(e){setStatus(`Failed: ${esc(e.message)}`,"bad");}}});
+
+const dz=$("dropzone");
+["dragenter","dragover"].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.style.background="#eaf4fd";}));
+["dragleave","drop"].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.style.background="#f8fbfe";}));
+dz.addEventListener("drop",e=>{const f=e.dataTransfer.files[0];if(f)importFile(f);});
+
+clearAll();
+</script>
+</body>
+</html>
